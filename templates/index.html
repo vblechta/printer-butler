@@ -6,18 +6,21 @@
   <title>Printer Butler</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
-<body>
+<body{% if start_fullscreen %} class="is-fullscreen"{% endif %}>
   <header class="top">
     <div class="brand">
       <div class="mark" aria-hidden="true"></div>
-      <div>
-        <h1>Printer Butler</h1>
+      <div class="brand-text">
+        <div class="brand-title">
+          <h1>Printer Butler</h1>
+          <span id="app-version" class="version">{{ app_version }}</span>
+        </div>
         <p class="tagline">Live fleet status for Xerox, Brother and Epson</p>
       </div>
     </div>
     <div class="top-meta">
       <span id="updated" class="muted">Waiting for first poll…</span>
-      <button type="button" id="fullscreen-toggle" class="icon-btn" aria-pressed="false" title="Fullscreen">Fullscreen</button>
+      <button type="button" id="fullscreen-toggle" class="icon-btn" aria-pressed="{{ 'true' if start_fullscreen else 'false' }}" title="{{ 'Exit fullscreen' if start_fullscreen else 'Fullscreen' }}">{{ 'Exit fullscreen' if start_fullscreen else 'Fullscreen' }}</button>
       <span id="live-pill" class="pill connecting">Connecting</span>
     </div>
   </header>

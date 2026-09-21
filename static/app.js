@@ -4,6 +4,7 @@ const filterInput = document.getElementById("filter");
 const livePill = document.getElementById("live-pill");
 const updated = document.getElementById("updated");
 const healthFilters = document.getElementById("health-filters");
+const versionLabel = document.getElementById("app-version");
 
 let snapshot = JSON.parse(document.getElementById("bootstrap").textContent);
 let healthFilter = "all";
@@ -128,6 +129,9 @@ function escapeHtml(value) {
 
 function applySnapshot(data) {
   snapshot = data;
+  if (data.version) {
+    versionLabel.textContent = data.version;
+  }
   updated.textContent = `Updated ${formatTime(new Date().toISOString())} · poll every ${data.poll_interval_seconds || 20}s`;
   render();
 }
@@ -144,13 +148,30 @@ healthFilters.addEventListener("click", (event) => {
 applySnapshot(snapshot);
 
 const fullscreenToggle = document.getElementById("fullscreen-toggle");
-let compactMode = false;
+const kioskFullscreen = queryFlag("fullscreen");
+let compactMode = kioskFullscreen;
+
+function queryFlag(name) {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has(name)) return false;
+  const value = params.get(name).trim().toLowerCase();
+  return value === "" || ["1", "true", "yes", "on"].includes(value);
+}
 
 function syncFullscreenUi() {
   document.body.classList.toggle("is-fullscreen", compactMode);
   fullscreenToggle.setAttribute("aria-pressed", String(compactMode));
   fullscreenToggle.textContent = compactMode ? "Exit fullscreen" : "Fullscreen";
   fullscreenToggle.title = compactMode ? "Exit fullscreen" : "Fullscreen";
+}
+
+async function enterBrowserFullscreen() {
+  if (!document.documentElement.requestFullscreen || document.fullscreenElement) return;
+  try {
+    await document.documentElement.requestFullscreen();
+  } catch {
+    /* browsers require a gesture; compact UI still applies */
+  }
 }
 
 async function toggleFullscreen() {
@@ -169,11 +190,17 @@ async function toggleFullscreen() {
 
 fullscreenToggle.addEventListener("click", toggleFullscreen);
 document.addEventListener("fullscreenchange", () => {
-  if (!document.fullscreenElement && compactMode) {
+  if (!document.fullscreenElement && compactMode && !kioskFullscreen) {
     compactMode = false;
     syncFullscreenUi();
   }
 });
+
+if (kioskFullscreen) {
+  syncFullscreenUi();
+  enterBrowserFullscreen();
+  document.addEventListener("pointerdown", enterBrowserFullscreen, { once: true });
+}
 
 if (window.EventSource) {
   const source = new EventSource("/api/stream");

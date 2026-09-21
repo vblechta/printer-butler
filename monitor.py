@@ -18,8 +18,9 @@ BRAND_HTTP = {
 
 
 class Monitor:
-    def __init__(self, config: dict[str, Any]):
+    def __init__(self, config: dict[str, Any], version: str = ""):
         self.config = config
+        self.version = version
         self._lock = threading.Lock()
         self._statuses: dict[str, dict[str, Any]] = {
             printer["name"]: empty_status(printer) for printer in config["printers"]
@@ -43,11 +44,15 @@ class Monitor:
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
-            printers = [dict(item) for item in self._statuses.values()]
+            return self._snapshot_unlocked()
+
+    def _snapshot_unlocked(self) -> dict[str, Any]:
+        printers = [dict(item) for item in self._statuses.values()]
         return {
             "printers": printers,
             "summary": _summary(printers),
             "poll_interval_seconds": self.config.get("poll_interval_seconds", 20),
+            "version": self.version,
         }
 
     def subscribe(self) -> Queue:
@@ -77,11 +82,7 @@ class Monitor:
         with self._lock:
             for status in results:
                 self._statuses[status["id"]] = status
-            snapshot = {
-                "printers": [dict(item) for item in self._statuses.values()],
-                "summary": _summary(list(self._statuses.values())),
-                "poll_interval_seconds": self.config.get("poll_interval_seconds", 20),
-            }
+            snapshot = self._snapshot_unlocked()
             subscribers = list(self._subscribers)
         for queue in subscribers:
             if queue.full():

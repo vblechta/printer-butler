@@ -35,6 +35,13 @@ button, input { font: inherit; }
   padding: 28px 32px 12px;
 }
 .brand { display: flex; gap: 14px; align-items: center; }
+.brand-title { display: flex; align-items: baseline; gap: 10px; }
+.version {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
 .mark {
   width: 42px;
   height: 42px;
