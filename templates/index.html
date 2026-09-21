@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Printer Butler</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <h1>Printer Butler</h1>
+        <p class="tagline">Live fleet status for Xerox, Brother and Epson</p>
+      </div>
+    </div>
+    <div class="top-meta">
+      <span id="updated" class="muted">Waiting for first poll…</span>
+      <button type="button" id="fullscreen-toggle" class="icon-btn" aria-pressed="false" title="Fullscreen">Fullscreen</button>
+      <span id="live-pill" class="pill connecting">Connecting</span>
+    </div>
+  </header>
+
+  <section class="summary" id="summary">
+    <article class="stat"><span class="n" id="sum-total">0</span><span>Printers</span></article>
+    <article class="stat ok"><span class="n" id="sum-ok">0</span><span>Ready</span></article>
+    <article class="stat warning"><span class="n" id="sum-warning">0</span><span>Warning</span></article>
+    <article class="stat error"><span class="n" id="sum-error">0</span><span>Error</span></article>
+    <article class="stat offline"><span class="n" id="sum-offline">0</span><span>Offline</span></article>
+  </section>
+
+  <section class="toolbar">
+    <input id="filter" type="search" placeholder="Filter by name, IP, location or brand">
+    <div class="filters" id="health-filters">
+      <button data-health="all" class="active">All</button>
+      <button data-health="ok">Ready</button>
+      <button data-health="warning">Warning</button>
+      <button data-health="error">Error</button>
+      <button data-health="offline">Offline</button>
+    </div>
+  </section>
+
+  <main id="grid" class="grid"></main>
+  <p id="empty" class="empty hidden">No printers match this filter.</p>
+
+  <script id="bootstrap" type="application/json">{{ snapshot | tojson }}</script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
