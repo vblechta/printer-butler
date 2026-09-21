@@ -9,8 +9,7 @@ COPY app.py config.py monitor.py status.py VERSION ./
 COPY collectors ./collectors
 COPY templates ./templates
 COPY static ./static
-COPY config.yaml.example ./config.yaml.example
-COPY config.yaml.example ./config.yaml
+COPY config.yaml ./config.yaml
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
