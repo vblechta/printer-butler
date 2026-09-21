@@ -6,4 +6,5 @@ __pycache__/
 .env
 *.log
 config.yaml
+config/config.yaml
 printers.md

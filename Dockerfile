@@ -9,11 +9,15 @@ COPY app.py config.py monitor.py status.py VERSION ./
 COPY collectors ./collectors
 COPY templates ./templates
 COPY static ./static
+COPY config.yaml.example ./config.yaml.example
 COPY config.yaml.example ./config.yaml
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8080
 
 ENV PRINTER_BUTLER_CONFIG=/app/config.yaml \
     PYTHONUNBUFFERED=1
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--worker-class", "gthread", "--workers", "1", "--threads", "8", "--timeout", "0", "app:app"]

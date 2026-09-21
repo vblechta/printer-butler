@@ -5,11 +5,14 @@ Live Flask dashboard for Xerox, Brother and Epson printers. It polls each device
 ## Docker Compose
 
 ```bash
-cp config.yaml.example config.yaml
+mkdir -p config
+cp config.yaml.example config/config.yaml
 docker compose up --build -d
 ```
 
-Open [http://127.0.0.1:8080/](http://127.0.0.1:8080/). Printers are read from `config.yaml`, which is mounted into the container.
+Open [http://127.0.0.1:8080/](http://127.0.0.1:8080/). Printers are read from `config/config.yaml`, which is mounted into the container. If that file is missing, the bundled example is used so Compose can still start.
+
+If a previous start failed with a mount error, Docker may have created a **directory** named `config.yaml`. Remove it first (`rm -rf config.yaml`).
 
 ```bash
 docker compose down
@@ -27,7 +30,7 @@ python app.py
 
 ## Configuration
 
-Printers are listed in `config.yaml` (copy from `config.yaml.example`):
+Printers are listed in `config.yaml` for a local run, or `config/config.yaml` for Docker (copy from `config.yaml.example`):
 
 ```yaml
 printers:
