@@ -71,7 +71,7 @@ Optional keys:
 - `alerts.nongenuine_toner_as_warning` — set `false` to ignore Brother non-genuine toner for health
 - `ui.hide_supplies_above_percent` — hide toner/ink/drum bars above this remaining percent (`100` shows all)
 
-Supply bars use a fixed order on every printer: black, cyan, magenta, yellow, then the matching drums. Drum bars use a darker shade of the same color.
+Supply bars use a fixed order on every printer: black, cyan, magenta, yellow, then the matching drums. Drum bars use a striped fill of the same color.
 
 The dashboard uses Server-Sent Events at `/api/stream`. A JSON snapshot is also available at `/api/printers`. `/healthz` reports `version`.
 
