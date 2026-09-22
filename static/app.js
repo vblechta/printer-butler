@@ -79,18 +79,60 @@ function brandLogo(brand) {
 }
 
 function visibleSupplies(supplies) {
-  return supplies.filter((supply) => {
-    if (["toner", "ink", "photoconductor"].includes(supply.kind)) return true;
-    if (/drum/i.test(supply.name || "")) return true;
-    if (supply.kind === "waste" && typeof supply.percent === "number" && supply.percent >= 0) return true;
-    return typeof supply.percent === "number" && supply.percent >= 0 && supply.percent <= 40;
-  });
+  const hideAbove = Number(snapshot.ui && snapshot.ui.hide_supplies_above_percent);
+  const threshold = Number.isFinite(hideAbove) ? hideAbove : 100;
+  return supplies
+    .filter((supply) => {
+      const percent = typeof supply.percent === "number" && supply.percent >= 0 ? supply.percent : null;
+      const tonerOrDrum =
+        ["toner", "ink", "photoconductor"].includes(supply.kind) || /drum/i.test(supply.name || "");
+      if (tonerOrDrum) {
+        return percent == null || percent <= threshold;
+      }
+      if (supply.kind === "waste" && percent != null) return true;
+      return percent != null && percent <= 40;
+    })
+    .sort((left, right) => {
+      const a = supplySortKey(left);
+      const b = supplySortKey(right);
+      if (a[0] !== b[0]) return a[0] - b[0];
+      if (a[1] !== b[1]) return a[1] - b[1];
+      return a[2].localeCompare(b[2]);
+    });
+}
+
+function isDrumSupply(supply) {
+  const name = String(supply.name || "").toLowerCase();
+  const kind = String(supply.kind || "").toLowerCase();
+  return kind === "photoconductor" || name.includes("drum");
+}
+
+function supplySortKey(supply) {
+  const name = String(supply.name || "").toLowerCase();
+  const kind = String(supply.kind || "").toLowerCase();
+  const isDrum = isDrumSupply(supply);
+  const isToner = ["toner", "ink"].includes(kind) && !isDrum;
+  const colorRank = { black: 0, cyan: 1, magenta: 2, yellow: 3 }[supplyColor(supply)] ?? 4;
+  const group = isToner ? 0 : isDrum ? 1 : kind === "waste" ? 2 : 3;
+  return [group, colorRank, name];
+}
+
+function supplyColor(supply) {
+  const blob = `${supply.color || ""} ${supply.name || ""}`.toLowerCase();
+  if (/\bcyan\b/.test(blob)) return "cyan";
+  if (/\bmagenta\b/.test(blob)) return "magenta";
+  if (/\byellow\b/.test(blob)) return "yellow";
+  if (/\bblack\b/.test(blob) || /\bbk\b/.test(blob)) return "black";
+  const color = String(supply.color || "").toLowerCase();
+  if (["black", "cyan", "magenta", "yellow"].includes(color)) return color;
+  return "black";
 }
 
 function supplyRow(supply) {
   const percent = typeof supply.percent === "number" && supply.percent >= 0 ? supply.percent : null;
   const width = percent == null ? 100 : percent;
-  const cls = percent == null ? "unknown" : supply.color || "other";
+  const color = percent == null ? "unknown" : isDrumSupply(supply) ? supplyColor(supply) : supply.color || "other";
+  const cls = [color, percent != null && isDrumSupply(supply) ? "drum" : ""].filter(Boolean).join(" ");
   return `
     <div class="bar-row">
       <span>${escapeHtml(supply.name)}</span>

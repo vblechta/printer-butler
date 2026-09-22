@@ -22,6 +22,10 @@ ipp:
 alerts:
   nongenuine_toner_as_warning: true
 
+ui:
+  # Hide toner/ink/drum bars with remaining life above this percent (100 = show all).
+  hide_supplies_above_percent: 100
+
 printers:
   - name: office-xerox
     ip: 192.168.1.10

@@ -37,6 +37,12 @@ def _with_defaults(data: dict[str, Any]) -> dict[str, Any]:
     ipp.setdefault("enabled", True)
     alerts = cfg.setdefault("alerts", {})
     alerts.setdefault("nongenuine_toner_as_warning", True)
+    ui = cfg.setdefault("ui", {})
+    try:
+        hide_above = int(ui.get("hide_supplies_above_percent", 100))
+    except (TypeError, ValueError):
+        hide_above = 100
+    ui["hide_supplies_above_percent"] = max(0, min(100, hide_above))
     printers = cfg.setdefault("printers", [])
     if not isinstance(printers, list):
         raise ValueError("config.yaml: printers must be a list")

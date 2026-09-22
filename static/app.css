@@ -16,6 +16,10 @@
   --cyan: #22d3ee;
   --magenta: #e879f9;
   --yellow: #facc15;
+  --drum-black: #6d7586;
+  --drum-cyan: #077185;
+  --drum-magenta: #962aa8;
+  --drum-yellow: #96750b;
   --waste: #a8a29e;
   --radius: 16px;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
@@ -198,6 +202,10 @@ h1 { margin: 0; font-size: 1.45rem; letter-spacing: -0.03em; }
 .fill.cyan { background: var(--cyan); }
 .fill.magenta { background: var(--magenta); }
 .fill.yellow { background: var(--yellow); }
+.fill.drum.black { background: var(--drum-black); }
+.fill.drum.cyan { background: var(--drum-cyan); }
+.fill.drum.magenta { background: var(--drum-magenta); }
+.fill.drum.yellow { background: var(--drum-yellow); }
 .fill.waste { background: var(--waste); }
 .fill.other { background: #6ee7b7; }
 .fill.unknown { background: repeating-linear-gradient(-45deg, #334155, #334155 4px, #1e293b 4px, #1e293b 8px); }

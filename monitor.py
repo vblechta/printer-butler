@@ -53,6 +53,11 @@ class Monitor:
             "summary": _summary(printers),
             "poll_interval_seconds": self.config.get("poll_interval_seconds", 20),
             "version": self.version,
+            "ui": {
+                "hide_supplies_above_percent": int(
+                    (self.config.get("ui") or {}).get("hide_supplies_above_percent", 100)
+                ),
+            },
         }
 
     def subscribe(self) -> Queue:

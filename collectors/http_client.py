@@ -11,7 +11,7 @@ from urllib3.util.ssl_ import create_urllib3_context
 
 warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
-USER_AGENT = "PrinterButler/1.1.0"
+USER_AGENT = "PrinterButler/1.2.0"
 
 
 class TLS12Adapter(HTTPAdapter):
