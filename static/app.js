@@ -8,6 +8,7 @@ const versionLabel = document.getElementById("app-version");
 
 let snapshot = JSON.parse(document.getElementById("bootstrap").textContent);
 let healthFilter = "all";
+let autoscaleFrame = 0;
 
 function render() {
   const query = filterInput.value.trim().toLowerCase();
@@ -27,6 +28,7 @@ function render() {
   setText("sum-offline", summary.offline ?? 0);
   grid.innerHTML = printers.map(cardHtml).join("");
   empty.classList.toggle("hidden", printers.length > 0);
+  scheduleAutoscale();
 }
 
 function cardHtml(printer) {
@@ -145,10 +147,10 @@ healthFilters.addEventListener("click", (event) => {
   render();
 });
 
-applySnapshot(snapshot);
-
 const fullscreenToggle = document.getElementById("fullscreen-toggle");
+const gridStage = document.getElementById("grid-stage");
 const kioskFullscreen = queryFlag("fullscreen");
+const autoscaleEnabled = queryFlag("autoscale");
 let compactMode = kioskFullscreen;
 
 function queryFlag(name) {
@@ -159,10 +161,49 @@ function queryFlag(name) {
 }
 
 function syncFullscreenUi() {
+  document.documentElement.classList.toggle("is-autoscale", compactMode && autoscaleEnabled);
   document.body.classList.toggle("is-fullscreen", compactMode);
+  document.body.classList.toggle("is-autoscale", compactMode && autoscaleEnabled);
   fullscreenToggle.setAttribute("aria-pressed", String(compactMode));
   fullscreenToggle.textContent = compactMode ? "Exit fullscreen" : "Fullscreen";
   fullscreenToggle.title = compactMode ? "Exit fullscreen" : "Fullscreen";
+  scheduleAutoscale();
+}
+
+function scheduleAutoscale() {
+  cancelAnimationFrame(autoscaleFrame);
+  autoscaleFrame = requestAnimationFrame(applyAutoscale);
+}
+
+function applyAutoscale() {
+  grid.style.transform = "";
+  grid.style.gridTemplateColumns = "";
+  grid.style.width = "";
+  if (!compactMode || !autoscaleEnabled || !gridStage) return;
+  const count = grid.querySelectorAll(".card").length;
+  const availW = gridStage.clientWidth;
+  const availH = gridStage.clientHeight;
+  if (count === 0 || availW < 8 || availH < 8) return;
+
+  let best = null;
+  for (let cols = 1; cols <= count; cols += 1) {
+    grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+    const contentW = Math.max(grid.scrollWidth, 1);
+    const contentH = Math.max(grid.scrollHeight, 1);
+    const scale = Math.min(availW / contentW, availH / contentH, 1);
+    const rows = Math.ceil(count / cols);
+    const visualW = availW / cols;
+    const visualH = (contentH * scale) / rows;
+    const score = Math.min(visualW, visualH);
+    if (!best || score > best.score) {
+      best = { cols, scale, score };
+    }
+  }
+  grid.style.gridTemplateColumns = `repeat(${best.cols}, minmax(0, 1fr))`;
+  if (best.scale < 0.999) {
+    grid.style.width = `${100 / best.scale}%`;
+    grid.style.transform = `scale(${best.scale})`;
+  }
 }
 
 async function enterBrowserFullscreen() {
@@ -201,6 +242,11 @@ if (kioskFullscreen) {
   enterBrowserFullscreen();
   document.addEventListener("pointerdown", enterBrowserFullscreen, { once: true });
 }
+
+window.addEventListener("resize", scheduleAutoscale);
+window.addEventListener("orientationchange", scheduleAutoscale);
+grid.addEventListener("load", scheduleAutoscale, true);
+applySnapshot(snapshot);
 
 if (window.EventSource) {
   const source = new EventSource("/api/stream");

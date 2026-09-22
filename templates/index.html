@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"{% if start_fullscreen and start_autoscale %} class="is-autoscale"{% endif %}>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Printer Butler</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
-<body{% if start_fullscreen %} class="is-fullscreen"{% endif %}>
+<body{% if start_fullscreen %} class="is-fullscreen{% if start_autoscale %} is-autoscale{% endif %}"{% endif %}>
   <header class="top">
     <div class="brand">
       <div class="mark" aria-hidden="true"></div>
@@ -44,8 +44,10 @@
     </div>
   </section>
 
-  <main id="grid" class="grid"></main>
-  <p id="empty" class="empty hidden">No printers match this filter.</p>
+  <div id="grid-stage" class="grid-stage">
+    <main id="grid" class="grid"></main>
+    <p id="empty" class="empty hidden">No printers match this filter.</p>
+  </div>
 
   <script id="bootstrap" type="application/json">{{ snapshot | tojson }}</script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>

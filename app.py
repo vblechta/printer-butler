@@ -36,7 +36,12 @@ def create_app(config_path: str | None = None) -> Flask:
     @app.get("/")
     def index():
         snapshot = monitor.snapshot()
-        return render_template("index.html", snapshot=snapshot, start_fullscreen=_query_flag(request, "fullscreen"))
+        return render_template(
+            "index.html",
+            snapshot=snapshot,
+            start_fullscreen=_query_flag(request, "fullscreen"),
+            start_autoscale=_query_flag(request, "autoscale"),
+        )
 
     @app.get("/api/printers")
     def api_printers():

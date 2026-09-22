@@ -233,6 +233,37 @@ body.is-fullscreen .card {
   min-height: 0;
 }
 
+html.is-autoscale,
+html.is-autoscale body {
+  height: 100%;
+  overflow: hidden;
+}
+body.is-autoscale {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+body.is-autoscale .grid-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+body.is-autoscale .grid {
+  flex: 0 0 auto;
+  width: 100%;
+  padding-top: 4px;
+  padding-bottom: 12px;
+  transform-origin: top left;
+}
+body.is-autoscale .empty {
+  padding: 16px;
+}
+
 @media (max-width: 800px) {
   .top, .summary, .toolbar, .grid { padding-left: 16px; padding-right: 16px; }
   .top { flex-direction: column; align-items: flex-start; }
