@@ -26,7 +26,11 @@ Fullscreen compact view (hides summary, filters, IPs and serials):
 
 [http://127.0.0.1:8080/?fullscreen=1](http://127.0.0.1:8080/?fullscreen=1)
 
-Add `autoscale=1` so every printer card fits in the viewport (column count and scale adjust on resize and each poll):
+Fit every printer card in the viewport (works with or without fullscreen; column count and scale adjust on resize and each poll):
+
+[http://127.0.0.1:8080/?autoscale=1](http://127.0.0.1:8080/?autoscale=1)
+
+Both together:
 
 [http://127.0.0.1:8080/?fullscreen=1&autoscale=1](http://127.0.0.1:8080/?fullscreen=1&autoscale=1)
 

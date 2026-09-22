@@ -245,6 +245,11 @@ body.is-autoscale {
   display: flex;
   flex-direction: column;
 }
+body.is-autoscale .top,
+body.is-autoscale .summary,
+body.is-autoscale .toolbar {
+  flex: 0 0 auto;
+}
 body.is-autoscale .grid-stage {
   flex: 1;
   min-height: 0;

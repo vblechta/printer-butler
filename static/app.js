@@ -161,9 +161,9 @@ function queryFlag(name) {
 }
 
 function syncFullscreenUi() {
-  document.documentElement.classList.toggle("is-autoscale", compactMode && autoscaleEnabled);
+  document.documentElement.classList.toggle("is-autoscale", autoscaleEnabled);
   document.body.classList.toggle("is-fullscreen", compactMode);
-  document.body.classList.toggle("is-autoscale", compactMode && autoscaleEnabled);
+  document.body.classList.toggle("is-autoscale", autoscaleEnabled);
   fullscreenToggle.setAttribute("aria-pressed", String(compactMode));
   fullscreenToggle.textContent = compactMode ? "Exit fullscreen" : "Fullscreen";
   fullscreenToggle.title = compactMode ? "Exit fullscreen" : "Fullscreen";
@@ -179,7 +179,7 @@ function applyAutoscale() {
   grid.style.transform = "";
   grid.style.gridTemplateColumns = "";
   grid.style.width = "";
-  if (!compactMode || !autoscaleEnabled || !gridStage) return;
+  if (!autoscaleEnabled || !gridStage) return;
   const count = grid.querySelectorAll(".card").length;
   const availW = gridStage.clientWidth;
   const availH = gridStage.clientHeight;
@@ -237,8 +237,8 @@ document.addEventListener("fullscreenchange", () => {
   }
 });
 
+syncFullscreenUi();
 if (kioskFullscreen) {
-  syncFullscreenUi();
   enterBrowserFullscreen();
   document.addEventListener("pointerdown", enterBrowserFullscreen, { once: true });
 }
@@ -246,6 +246,9 @@ if (kioskFullscreen) {
 window.addEventListener("resize", scheduleAutoscale);
 window.addEventListener("orientationchange", scheduleAutoscale);
 grid.addEventListener("load", scheduleAutoscale, true);
+if (window.ResizeObserver && gridStage) {
+  new ResizeObserver(scheduleAutoscale).observe(gridStage);
+}
 applySnapshot(snapshot);
 
 if (window.EventSource) {
