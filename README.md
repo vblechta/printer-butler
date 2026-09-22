@@ -14,6 +14,8 @@ docker compose up --build -d
 
 Open [http://127.0.0.1:8080/](http://127.0.0.1:8080/). Printers are read from `config/config.yaml`, which is mounted into the container. If that file is missing, the bundled example is used so Compose can still start.
 
+The Compose file uses host networking so SNMP and IPP talk to printers on the LAN. Docker bridge NAT often drops Xerox SNMP replies, which shows up as missing page counts and empty cards for printers that have no IPP (such as PRN-AMBU-RECEP).
+
 If a previous start failed with a mount error, Docker may have created a **directory** named `config.yaml`. Remove it first (`rm -rf config.yaml`).
 
 ```bash

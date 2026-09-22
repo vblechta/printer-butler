@@ -40,11 +40,21 @@ REQUESTED = [
 
 def collect(session: requests.Session, printer: dict[str, Any], timeout: float) -> dict[str, Any] | None:
     payload = _build_request(printer["ip"])
+    ip = printer["ip"]
     urls = [
-        f"http://{printer['ip']}/ipp/print",
-        f"http://{printer['ip']}:631/ipp/print",
+        f"http://{ip}/ipp/print",
+        f"http://{ip}:631/ipp/print",
+        f"https://{ip}/ipp/print",
+        f"https://{ip}:443/ipp/print",
+        f"https://{ip}:631/ipp/print",
     ]
-    ipp_timeout = min(timeout, 2.0)
+    ipp_timeout = min(timeout, 3.0)
+    headers = {
+        "Content-Type": "application/ipp",
+        "Accept": "application/ipp",
+        # Some Xerox firmware returns HTTP 406 when gzip is advertised.
+        "Accept-Encoding": "identity",
+    }
     for url in urls:
         try:
             response = fetch(
@@ -52,7 +62,7 @@ def collect(session: requests.Session, printer: dict[str, Any], timeout: float) 
                 url,
                 method="POST",
                 timeout=ipp_timeout,
-                headers={"Content-Type": "application/ipp", "Accept": "application/ipp"},
+                headers=headers,
                 data=payload,
             )
             if response.status_code >= 400 or not response.content or response.content[:1] not in {b"\x01", b"\x02"}:

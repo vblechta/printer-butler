@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 from typing import Any
 
 from pysnmp.hlapi.v1arch.asyncio import (
@@ -65,13 +66,16 @@ SUPPLY_TYPE = {
 SUPPLY_CLASS_CONSUMED = 3
 SUPPLY_CLASS_FILLED = 4
 
+_COLLECT_LOCK = threading.Lock()
+
 
 def collect_sync(config: dict[str, Any], printer: dict[str, Any]) -> dict[str, Any] | None:
     timeout = float((config.get("snmp") or {}).get("timeout", 1.5)) * 6 + 2
-    try:
-        return asyncio.run(asyncio.wait_for(collect(config, printer), timeout=timeout))
-    except TimeoutError:
-        return {"online": False, "source": "snmp", "errors": ["SNMP timeout"]}
+    with _COLLECT_LOCK:
+        try:
+            return asyncio.run(asyncio.wait_for(collect(config, printer), timeout=timeout))
+        except TimeoutError:
+            return {"online": False, "source": "snmp", "errors": ["SNMP timeout"]}
 
 
 async def collect(config: dict[str, Any], printer: dict[str, Any]) -> dict[str, Any] | None:
@@ -104,8 +108,23 @@ async def collect(config: dict[str, Any], printer: dict[str, Any]) -> dict[str, 
         )
         if not any(value is not None for value in scalars.values()):
             return None
-        supplies_rows = await _walk_table(dispatcher, auth, target, SUPPLIES_ROOT)
-        tray_rows = await _walk_table(dispatcher, auth, target, TRAYS_ROOT)
+        walk_timeout = max(2.0, float(snmp_cfg.get("timeout", 1.5)) * 3)
+        supplies_rows: dict[tuple[str, str], Any] = {}
+        tray_rows: dict[tuple[str, str], Any] = {}
+        try:
+            supplies_rows = await asyncio.wait_for(
+                _walk_table(dispatcher, auth, target, SUPPLIES_ROOT),
+                timeout=walk_timeout,
+            )
+        except Exception:
+            pass
+        try:
+            tray_rows = await asyncio.wait_for(
+                _walk_table(dispatcher, auth, target, TRAYS_ROOT),
+                timeout=walk_timeout,
+            )
+        except Exception:
+            pass
         return _to_status(scalars, supplies_rows, tray_rows)
     except Exception as exc:
         return {"online": False, "source": "snmp", "errors": [f"SNMP: {exc}"]}
@@ -120,23 +139,23 @@ async def _get_many(
     oids: dict[str, str],
 ) -> dict[str, Any]:
     out: dict[str, Any] = {key: None for key in oids}
-    for key, oid in oids.items():
-        try:
-            error_indication, error_status, _error_index, var_binds = await asyncio.wait_for(
-                get_cmd(
-                    dispatcher,
-                    auth,
-                    target,
-                    ObjectType(ObjectIdentity(oid)),
-                    lookupMib=False,
-                ),
-                timeout=target.timeout + 0.5,
-            )
-        except Exception:
+    objects = [ObjectType(ObjectIdentity(oid)) for oid in oids.values()]
+    try:
+        error_indication, error_status, _error_index, var_binds = await asyncio.wait_for(
+            get_cmd(dispatcher, auth, target, *objects, lookupMib=False),
+            timeout=target.timeout + 1.5,
+        )
+    except Exception:
+        return out
+    if error_indication or error_status or not var_binds:
+        return out
+    oid_to_key = {oid.lstrip("."): key for key, oid in oids.items()}
+    for var_bind in var_binds:
+        oid_s = str(var_bind[0]).lstrip(".")
+        key = oid_to_key.get(oid_s)
+        if not key:
             continue
-        if error_indication or error_status or not var_binds:
-            continue
-        value = var_binds[0][1]
+        value = var_bind[1]
         if value is None or value.__class__.__name__ in {"NoSuchObject", "NoSuchInstance", "EndOfMibView"}:
             continue
         out[key] = _decode(value)
