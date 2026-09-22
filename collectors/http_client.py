@@ -8,7 +8,7 @@ from urllib3.exceptions import InsecureRequestWarning
 
 warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
-USER_AGENT = "PrinterButler/1.0"
+USER_AGENT = "PrinterButler/1.1.0"
 
 
 def make_session(verify_tls: bool, timeout: float) -> requests.Session:

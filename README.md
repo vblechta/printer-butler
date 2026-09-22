@@ -2,6 +2,8 @@
 
 Live Flask dashboard for Xerox, Brother and Epson printers. It polls each device over its embedded web interface, IPP and SNMP, then streams the merged status to the browser.
 
+Current version: **1.1.0** (shown next to the title; updates with each poll after an app upgrade).
+
 ## Docker Compose
 
 ```bash
@@ -17,6 +19,18 @@ If a previous start failed with a mount error, Docker may have created a **direc
 ```bash
 docker compose down
 ```
+
+## Kiosk
+
+Fullscreen compact view (hides summary, filters, IPs and serials):
+
+[http://127.0.0.1:8080/?fullscreen=1](http://127.0.0.1:8080/?fullscreen=1)
+
+Add `autoscale=1` so every printer card fits in the viewport (column count and scale adjust on resize and each poll):
+
+[http://127.0.0.1:8080/?fullscreen=1&autoscale=1](http://127.0.0.1:8080/?fullscreen=1&autoscale=1)
+
+Bare `?fullscreen` / `?autoscale` and `1` / `true` / `yes` / `on` are accepted. Pair with a Chromium kiosk flag such as `--kiosk` if you want the browser chrome gone too.
 
 ## Local setup
 
@@ -50,6 +64,6 @@ Optional keys:
 - `snmp.enabled`, `http.enabled`, `ipp.enabled`
 - `alerts.nongenuine_toner_as_warning` — set `false` to ignore Brother non-genuine toner for health
 
-The dashboard uses Server-Sent Events at `/api/stream`. A JSON snapshot is also available at `/api/printers`.
+The dashboard uses Server-Sent Events at `/api/stream`. A JSON snapshot is also available at `/api/printers`. `/healthz` reports `version`.
 
 Point the app at another file with `PRINTER_BUTLER_CONFIG=/path/to/config.yaml`.
