@@ -80,7 +80,8 @@ function brandLogo(brand) {
 
 function visibleSupplies(supplies) {
   return supplies.filter((supply) => {
-    if (["toner", "ink"].includes(supply.kind)) return true;
+    if (["toner", "ink", "photoconductor"].includes(supply.kind)) return true;
+    if (/drum/i.test(supply.name || "")) return true;
     if (supply.kind === "waste" && typeof supply.percent === "number" && supply.percent >= 0) return true;
     return typeof supply.percent === "number" && supply.percent >= 0 && supply.percent <= 40;
   });
