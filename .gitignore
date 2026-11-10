@@ -8,3 +8,6 @@ __pycache__/
 config.yaml
 config/config.yaml
 printers.md
+data/
+*.sqlite
+*.sqlite-*

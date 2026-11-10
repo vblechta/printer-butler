@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -8,7 +9,10 @@ from typing import Any
 
 from collectors import brother, epson, ipp, snmp, xerox
 from collectors.http_client import make_session
+from history import PageHistory, resolve_database_path, sample_interval
 from status import empty_status, finalize, merge_status
+
+log = logging.getLogger(__name__)
 
 BRAND_HTTP = {
     "brother": brother.collect,
@@ -32,6 +36,8 @@ class Monitor:
             bool(config["http"].get("verify_tls", False)),
             float(config.get("request_timeout_seconds", 5)),
         )
+        self._sample_interval = sample_interval(config)
+        self.history = PageHistory(resolve_database_path(config))
 
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
@@ -72,6 +78,21 @@ class Monitor:
             if queue in self._subscribers:
                 self._subscribers.remove(queue)
 
+    def page_stats(self, printer_id: str) -> dict[str, Any] | None:
+        with self._lock:
+            status = self._statuses.get(printer_id)
+            if status is None:
+                return None
+            current = status.get("page_count")
+            name = status.get("name") or printer_id
+        stats = self.history.stats(printer_id, current)
+        hours = self._sample_interval.total_seconds() / 3600
+        stats["id"] = printer_id
+        stats["name"] = name
+        stats["page_count"] = current if isinstance(current, int) else None
+        stats["sample_interval_hours"] = int(hours) if float(hours).is_integer() else round(hours, 2)
+        return stats
+
     def _run(self) -> None:
         while not self._stop.is_set():
             started = time.monotonic()
@@ -89,6 +110,13 @@ class Monitor:
                 self._statuses[status["id"]] = status
             snapshot = self._snapshot_unlocked()
             subscribers = list(self._subscribers)
+        try:
+            self.history.record_due(
+                [(status["id"], status.get("page_count")) for status in results],
+                interval=self._sample_interval,
+            )
+        except Exception:
+            log.exception("failed to store page counts")
         for queue in subscribers:
             if queue.full():
                 try:

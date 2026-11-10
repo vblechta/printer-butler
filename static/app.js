@@ -59,7 +59,7 @@ function cardHtml(printer) {
         <div><dt>Status</dt><dd>${escapeHtml(printer.status || "Unknown")}</dd></div>
         <div class="meta-ip"><dt>IP</dt><dd><a href="${escapeHtml(printer.web_url)}" target="_blank" rel="noreferrer">${escapeHtml(printer.ip)}</a></dd></div>
         <div class="meta-serial"><dt>Serial</dt><dd>${escapeHtml(printer.serial || "—")}</dd></div>
-        <div><dt>Pages</dt><dd>${formatNumber(printer.page_count)}</dd></div>
+        <div><dt>Pages</dt><dd>${pageCountHtml(printer)}</dd></div>
       </dl>
       <div class="bars">${supplies}</div>
       ${trays ? `<div class="trays">${trays}</div>` : ""}
@@ -128,6 +128,15 @@ function supplyColor(supply) {
   return "black";
 }
 
+function supplyLabel(supply) {
+  const name = String(supply.name || "");
+  const kind = String(supply.kind || "").toLowerCase();
+  const drum = isDrumSupply(supply);
+  const toner = ["toner", "ink"].includes(kind) && !drum;
+  if (!toner && !drum) return name;
+  return name.replace(/\bcartridge\b/gi, " ").replace(/\s+/g, " ").trim();
+}
+
 function supplyRow(supply) {
   const percent = typeof supply.percent === "number" && supply.percent >= 0 ? supply.percent : null;
   const width = percent == null ? 100 : percent;
@@ -135,7 +144,7 @@ function supplyRow(supply) {
   const cls = [color, percent != null && isDrumSupply(supply) ? "drum" : ""].filter(Boolean).join(" ");
   return `
     <div class="bar-row">
-      <span>${escapeHtml(supply.name)}</span>
+      <span>${escapeHtml(supplyLabel(supply))}</span>
       <div class="track"><div class="fill ${cls}" style="width:${width}%"></div></div>
       <span>${percent == null ? "n/a" : percent + "%"}</span>
     </div>
@@ -147,9 +156,25 @@ function setText(id, value) {
   if (node) node.textContent = String(value);
 }
 
+function pageCountHtml(printer) {
+  const text = formatNumber(printer.page_count);
+  if (printer.page_count == null || printer.page_count === "") return text;
+  return `<button type="button" class="page-count" data-printer="${escapeHtml(printer.name)}" title="Page statistics">${text}</button>`;
+}
+
 function formatNumber(value) {
   if (value == null || value === "") return "—";
   return Number(value).toLocaleString("en-US");
+}
+
+function formatPages(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  return Math.round(value).toLocaleString("en-US");
+}
+
+function formatAverage(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
 function formatPercent(value) {
@@ -182,6 +207,170 @@ function applySnapshot(data) {
 }
 
 filterInput.addEventListener("input", render);
+grid.addEventListener("click", (event) => {
+  const button = event.target.closest("button.page-count");
+  if (!button) return;
+  openPageStats(button.dataset.printer);
+});
+
+const pageModal = document.getElementById("page-modal");
+const pageChart = document.getElementById("page-chart");
+const pageRanges = document.getElementById("page-ranges");
+let pageStats = null;
+let pageRange = "week";
+let pageStatsRequest = 0;
+
+const pageRangeCopy = {
+  week: { caption: "Last 7 days", label: "Pages printed each day for the last 7 days" },
+  month: { caption: "Last 30 days", label: "Pages printed each day for the last 30 days" },
+  year: { caption: "Last 12 months", label: "Pages printed each month for the last 12 months" },
+};
+
+function openPageStats(printer) {
+  const request = ++pageStatsRequest;
+  pageStats = null;
+  pageRange = "week";
+  setPageRangePressed();
+  document.getElementById("page-modal-title").textContent = printer || "Pages";
+  document.getElementById("page-modal-count").textContent = "Loading page history…";
+  document.getElementById("page-modal-status").textContent = "";
+  document.getElementById("page-chart-caption").textContent = "";
+  for (const field of ["today", "last_week", "last_month", "average_day", "average_month", "average_year"]) {
+    setPageField(field, null, field.startsWith("average"));
+  }
+  pageChart.className = "page-chart is-empty";
+  pageChart.innerHTML = "";
+  setPageModalOpen(true);
+  loadPageStats(printer, request);
+}
+
+async function loadPageStats(printer, request) {
+  try {
+    const response = await fetch(`/api/printers/${encodeURIComponent(printer)}/pages`);
+    if (!response.ok) throw new Error(`Request failed (${response.status})`);
+    const data = await response.json();
+    if (request !== pageStatsRequest) return;
+    pageStats = data;
+    renderPageStats();
+  } catch (err) {
+    if (request !== pageStatsRequest) return;
+    document.getElementById("page-modal-count").textContent = "";
+    document.getElementById("page-modal-status").textContent = "Could not load page history.";
+    console.warn(err);
+  }
+}
+
+function renderPageStats() {
+  const stats = pageStats;
+  if (!stats) return;
+  document.getElementById("page-modal-title").textContent = stats.name || "Pages";
+  document.getElementById("page-modal-count").textContent =
+    stats.page_count == null ? "Page count unavailable" : `${formatNumber(stats.page_count)} pages`;
+  document.getElementById("page-modal-status").textContent = historyNote(stats);
+  setPageField("today", stats.today, false);
+  setPageField("last_week", stats.last_week, false);
+  setPageField("last_month", stats.last_month, false);
+  setPageField("average_day", stats.average_day, true);
+  setPageField("average_month", stats.average_month, true);
+  setPageField("average_year", stats.average_year, true);
+  renderPageChart();
+}
+
+function historyNote(stats) {
+  const every = stats.sample_interval_hours || 6;
+  if (!stats.sample_count) {
+    return `No readings stored yet. Page count is saved every ${every} hours.`;
+  }
+  const since = formatHistoryTime(stats.history_since);
+  return `Saved every ${every} hours since ${since}. Averages use the print rate since then.`;
+}
+
+function formatHistoryTime(value) {
+  if (!value) return "the first reading";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function setPageField(field, value, average) {
+  const node = document.querySelector(`#page-modal [data-field="${field}"]`);
+  if (node) node.textContent = average ? formatAverage(value) : formatPages(value);
+}
+
+function renderPageChart() {
+  const series = (pageStats && pageStats.series && pageStats.series[pageRange]) || [];
+  const copy = pageRangeCopy[pageRange];
+  const measured = series.some((bar) => typeof bar.pages === "number");
+  pageChart.setAttribute("aria-label", copy.label);
+  if (!measured) {
+    pageChart.className = "page-chart is-empty";
+    pageChart.innerHTML = `<p class="muted">Not enough readings yet to draw this chart.</p>`;
+    document.getElementById("page-chart-caption").textContent = "";
+    return;
+  }
+  const showValues = series.length <= 12;
+  const known = series.filter((bar) => typeof bar.pages === "number");
+  const max = Math.max(1, ...known.map((bar) => bar.pages));
+  const total = known.reduce((sum, bar) => sum + bar.pages, 0);
+  pageChart.className = showValues ? "page-chart" : "page-chart dense";
+  pageChart.innerHTML = series
+    .map((bar) => {
+      const unknown = typeof bar.pages !== "number";
+      const pages = unknown ? 0 : bar.pages;
+      const height = pages <= 0 ? 0 : Math.max(3, Math.round((pages / max) * 140));
+      const value = showValues && pages > 0 ? formatPages(pages) : "";
+      const title = unknown ? `${bar.title}: no reading yet` : `${bar.title}: ${formatPages(pages)} pages`;
+      return `
+        <div class="page-bar${bar.current ? " is-current" : ""}${unknown ? " is-unknown" : ""}" title="${escapeHtml(title)}">
+          <span class="page-bar-value">${value}</span>
+          <div class="page-bar-track"><div class="page-bar-fill" style="height:${height}px"></div></div>
+          <span class="page-bar-label">${escapeHtml(bar.label)}</span>
+        </div>
+      `;
+    })
+    .join("");
+  document.getElementById("page-chart-caption").textContent = `${copy.caption} · ${formatPages(total)} pages`;
+}
+
+function setPageRangePressed() {
+  for (const button of pageRanges.querySelectorAll("button[data-range]")) {
+    const active = button.dataset.range === pageRange;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+}
+
+function setPageModalOpen(open) {
+  pageModal.classList.toggle("hidden", !open);
+  pageModal.setAttribute("aria-hidden", String(!open));
+  if (open) pageModal.querySelector(".modal-card").focus();
+}
+
+function closePageStats() {
+  pageStatsRequest += 1;
+  setPageModalOpen(false);
+}
+
+pageRanges.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-range]");
+  if (!button || !pageStats) return;
+  pageRange = button.dataset.range;
+  setPageRangePressed();
+  renderPageChart();
+});
+document.getElementById("page-modal-close").addEventListener("click", closePageStats);
+pageModal.addEventListener("click", (event) => {
+  if (event.target === pageModal) closePageStats();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !pageModal.classList.contains("hidden")) closePageStats();
+});
 healthFilters.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-health]");
   if (!button) return;

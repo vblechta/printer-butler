@@ -49,6 +49,41 @@
     <p id="empty" class="empty hidden">No printers match this filter.</p>
   </div>
 
+  <div id="page-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="page-modal-title" aria-hidden="true">
+    <div class="modal-card" tabindex="-1">
+      <div class="modal-head">
+        <div>
+          <h2 id="page-modal-title">Pages</h2>
+          <p id="page-modal-count" class="muted"></p>
+        </div>
+        <button type="button" id="page-modal-close" class="icon-btn">Close</button>
+      </div>
+      <p id="page-modal-status" class="muted"></p>
+      <h3 class="modal-section">Pages printed</h3>
+      <div class="page-stats">
+        <article><span class="n" data-field="today">—</span><span>Today</span></article>
+        <article><span class="n" data-field="last_week">—</span><span>Last week</span></article>
+        <article><span class="n" data-field="last_month">—</span><span>Last month</span></article>
+      </div>
+      <h3 class="modal-section">Averages</h3>
+      <div class="page-stats">
+        <article><span class="n" data-field="average_day">—</span><span>Average day</span></article>
+        <article><span class="n" data-field="average_month">—</span><span>Average month</span></article>
+        <article><span class="n" data-field="average_year">—</span><span>Average year</span></article>
+      </div>
+      <div class="modal-chart-head">
+        <h3 class="modal-section">History</h3>
+        <div class="filters" id="page-ranges">
+          <button type="button" data-range="week" class="active" aria-pressed="true">Week</button>
+          <button type="button" data-range="month" aria-pressed="false">Month</button>
+          <button type="button" data-range="year" aria-pressed="false">Year</button>
+        </div>
+      </div>
+      <div id="page-chart" class="page-chart is-empty" role="img" aria-label="Pages printed"></div>
+      <p id="page-chart-caption" class="muted"></p>
+    </div>
+  </div>
+
   <script id="bootstrap" type="application/json">{{ snapshot | tojson }}</script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

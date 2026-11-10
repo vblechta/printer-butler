@@ -4,8 +4,11 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY app.py config.py monitor.py status.py VERSION ./
+COPY app.py config.py monitor.py status.py history.py VERSION ./
 COPY collectors ./collectors
 COPY templates ./templates
 COPY static ./static

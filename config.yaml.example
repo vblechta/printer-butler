@@ -26,6 +26,11 @@ ui:
   # Hide toner/ink/drum bars with remaining life above this percent (100 = show all).
   hide_supplies_above_percent: 100
 
+history:
+  # Cumulative page counter stored this often. The first reading is saved immediately.
+  sample_interval_hours: 6
+  # database: data/pages.sqlite
+
 printers:
   - name: office-xerox
     ip: 192.168.1.10

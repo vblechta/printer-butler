@@ -47,6 +47,13 @@ def create_app(config_path: str | None = None) -> Flask:
     def api_printers():
         return monitor.snapshot()
 
+    @app.get("/api/printers/<path:printer_id>/pages")
+    def api_printer_pages(printer_id: str):
+        stats = monitor.page_stats(printer_id)
+        if stats is None:
+            return {"error": "Unknown printer"}, 404
+        return stats
+
     @app.get("/api/stream")
     def api_stream():
         queue = monitor.subscribe()

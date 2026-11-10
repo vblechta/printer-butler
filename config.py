@@ -43,6 +43,14 @@ def _with_defaults(data: dict[str, Any]) -> dict[str, Any]:
     except (TypeError, ValueError):
         hide_above = 100
     ui["hide_supplies_above_percent"] = max(0, min(100, hide_above))
+    history = cfg.setdefault("history", {})
+    try:
+        interval_hours = float(history.get("sample_interval_hours", 6))
+    except (TypeError, ValueError):
+        interval_hours = 6
+    if interval_hours <= 0:
+        interval_hours = 6
+    history["sample_interval_hours"] = interval_hours
     printers = cfg.setdefault("printers", [])
     if not isinstance(printers, list):
         raise ValueError("config.yaml: printers must be a list")

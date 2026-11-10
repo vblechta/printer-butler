@@ -8,6 +8,12 @@ if [ -d /app/config.yaml ]; then
   exit 1
 fi
 
+export TZ="${TZ:-Europe/Prague}"
+
+if [ -d /data ]; then
+  export PRINTER_BUTLER_DB="${PRINTER_BUTLER_DB:-/data/pages.sqlite}"
+fi
+
 if [ -f /config/config.yaml ]; then
   export PRINTER_BUTLER_CONFIG=/config/config.yaml
 elif [ -f /app/config.yaml ]; then

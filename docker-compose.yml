@@ -3,6 +3,10 @@ services:
     build: .
     container_name: printer-butler
     network_mode: host
+    environment:
+      TZ: Europe/Prague
+      PRINTER_BUTLER_DB: /data/pages.sqlite
     volumes:
       - ./config:/config:ro
+      - ./data:/data
     restart: unless-stopped
