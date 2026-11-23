@@ -67,6 +67,20 @@ class BuildStatsTests(unittest.TestCase):
         self.assertIsNone(stats["average_day"])
         self.assertIsNone(stats["series"]["week"][-1]["pages"])
 
+    def test_weekday_averages_leave_out_weekend_time_and_pages(self):
+        now = at(2026, 11, 10, 0)
+        points = [
+            (at(2026, 11, 6, 0), 0),
+            (at(2026, 11, 7, 0), 100),
+            (at(2026, 11, 9, 0), 100),
+            (now, 200),
+        ]
+        stats = build_stats(points, now)
+        self.assertEqual(stats["average_day"], 50.0)
+        self.assertEqual(stats["average_day_weekdays"], 100.0)
+        self.assertAlmostEqual(stats["average_month_weekdays"], 100 * 30.4375 * 5 / 7, places=1)
+        self.assertAlmostEqual(stats["average_year_weekdays"], 100 * 365.25 * 5 / 7, places=1)
+
 
 class PageHistoryTests(unittest.TestCase):
     def setUp(self):

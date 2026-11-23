@@ -146,14 +146,17 @@ def build_stats(points: list[tuple[datetime, int]], now: datetime) -> dict[str, 
     week = _day_series(ordered, moment, 7, measured)
     month = _day_series(ordered, moment, 30, measured)
     year = _month_series(ordered, moment, 12, measured)
-    averages = _averages(ordered) if measured else (None, None, None)
+    inclusive, weekdays = _averages(ordered) if measured else ((None, None, None), (None, None, None))
     return {
         "today": week[-1]["pages"],
         "last_week": _sum_if_complete(week),
         "last_month": _sum_if_complete(month),
-        "average_day": averages[0],
-        "average_month": averages[1],
-        "average_year": averages[2],
+        "average_day": inclusive[0],
+        "average_month": inclusive[1],
+        "average_year": inclusive[2],
+        "average_day_weekdays": weekdays[0],
+        "average_month_weekdays": weekdays[1],
+        "average_year_weekdays": weekdays[2],
         "series": {"week": week, "month": month, "year": year},
     }
 
@@ -213,22 +216,38 @@ def _month_series(
     return series
 
 
-def _averages(points: list[tuple[datetime, int]]) -> tuple[float | None, float | None, float | None]:
+def _averages(
+    points: list[tuple[datetime, int]],
+) -> tuple[tuple[float | None, float | None, float | None], tuple[float | None, float | None, float | None]]:
     start, end = points[0][0], points[-1][0]
-    span_seconds = (end - start).total_seconds()
-    if span_seconds <= 0:
-        return None, None, None
-    total = _pages_between(points, start, end)
-    if total is None:
+    if (end - start).total_seconds() <= 0:
+        empty = (None, None, None)
+        return empty, empty
+    inclusive = _rate(points, start, end, include_weekends=True)
+    weekdays = _rate(points, start, end, include_weekends=False)
+    return inclusive, weekdays
+
+
+def _rate(
+    points: list[tuple[datetime, int]],
+    start: datetime,
+    end: datetime,
+    *,
+    include_weekends: bool,
+) -> tuple[float | None, float | None, float | None]:
+    span_seconds = _covered_seconds(start, end, weekdays_only=not include_weekends)
+    total = _pages_between(points, start, end, weekdays_only=not include_weekends)
+    if total is None or span_seconds <= 0:
         return None, None, None
     if total == 0 and span_seconds < 3600:
         return None, None, None
-    span_days = span_seconds / 86400
-    average_day = total / span_days
+    average_day = total / (span_seconds / 86400)
+    month_days = MONTH_DAYS if include_weekends else MONTH_DAYS * 5 / 7
+    year_days = YEAR_DAYS if include_weekends else YEAR_DAYS * 5 / 7
     return (
         round(average_day, 1),
-        round(average_day * MONTH_DAYS, 1),
-        round(average_day * YEAR_DAYS, 1),
+        round(average_day * month_days, 1),
+        round(average_day * year_days, 1),
     )
 
 
@@ -252,7 +271,13 @@ def _sum_if_complete(series: list[dict[str, Any]]) -> int | None:
     return sum(item["pages"] for item in series)
 
 
-def _pages_between(points: list[tuple[datetime, int]], start: datetime, end: datetime) -> int | None:
+def _pages_between(
+    points: list[tuple[datetime, int]],
+    start: datetime,
+    end: datetime,
+    *,
+    weekdays_only: bool = False,
+) -> int | None:
     """Pages printed in [start, end], splitting each counter increase across the sample gap."""
     if len(points) < 2:
         return None
@@ -267,11 +292,29 @@ def _pages_between(points: list[tuple[datetime, int]], start: datetime, end: dat
             continue
         overlap_start = left_at if left_at > start else start
         overlap_end = right_at if right_at < end else end
-        overlap = (overlap_end - overlap_start).total_seconds()
+        overlap = _covered_seconds(overlap_start, overlap_end, weekdays_only=weekdays_only)
         if overlap <= 0:
             continue
         total += (right_count - left_count) * (overlap / span)
     return int(total + 0.5)
+
+
+def _covered_seconds(start: datetime, end: datetime, *, weekdays_only: bool) -> float:
+    if end <= start:
+        return 0
+    if not weekdays_only:
+        return (end - start).total_seconds()
+    total = 0.0
+    cursor = start
+    while cursor < end:
+        next_day = _midnight(cursor) + timedelta(days=1)
+        segment_end = next_day if next_day < end else end
+        if segment_end <= cursor:
+            break
+        if cursor.weekday() < 5:
+            total += (segment_end - cursor).total_seconds()
+        cursor = segment_end
+    return total
 
 
 def _with_current(

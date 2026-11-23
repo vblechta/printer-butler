@@ -346,6 +346,22 @@ button.page-count:focus-visible { color: #9dc0ff; }
   gap: 12px;
   flex-wrap: wrap;
 }
+.weekend-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  user-select: none;
+}
+.weekend-toggle input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #4f8cff;
+}
 .page-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

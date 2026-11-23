@@ -216,6 +216,7 @@ grid.addEventListener("click", (event) => {
 const pageModal = document.getElementById("page-modal");
 const pageChart = document.getElementById("page-chart");
 const pageRanges = document.getElementById("page-ranges");
+const countWeekends = document.getElementById("count-weekends");
 let pageStats = null;
 let pageRange = "week";
 let pageStatsRequest = 0;
@@ -270,10 +271,19 @@ function renderPageStats() {
   setPageField("today", stats.today, false);
   setPageField("last_week", stats.last_week, false);
   setPageField("last_month", stats.last_month, false);
-  setPageField("average_day", stats.average_day, true);
-  setPageField("average_month", stats.average_month, true);
-  setPageField("average_year", stats.average_year, true);
+  renderAverages();
   renderPageChart();
+}
+
+function renderAverages() {
+  const stats = pageStats;
+  if (!stats) return;
+  const weekends = countWeekends.checked;
+  const suffix = weekends ? "" : "_weekdays";
+  setPageField("average_day", stats[`average_day${suffix}`], true);
+  setPageField("average_month", stats[`average_month${suffix}`], true);
+  setPageField("average_year", stats[`average_year${suffix}`], true);
+  document.getElementById("page-modal-status").textContent = historyNote(stats);
 }
 
 function historyNote(stats) {
@@ -282,7 +292,10 @@ function historyNote(stats) {
     return `No readings stored yet. Page count is saved every ${every} hours.`;
   }
   const since = formatHistoryTime(stats.history_since);
-  return `Saved every ${every} hours since ${since}. Averages use the print rate since then.`;
+  const basis = countWeekends.checked
+    ? "Averages use the print rate since then."
+    : "Averages use the weekday print rate since then.";
+  return `Saved every ${every} hours since ${since}. ${basis}`;
 }
 
 function formatHistoryTime(value) {
@@ -364,6 +377,7 @@ pageRanges.addEventListener("click", (event) => {
   setPageRangePressed();
   renderPageChart();
 });
+countWeekends.addEventListener("change", renderAverages);
 document.getElementById("page-modal-close").addEventListener("click", closePageStats);
 pageModal.addEventListener("click", (event) => {
   if (event.target === pageModal) closePageStats();
