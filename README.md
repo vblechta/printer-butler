@@ -2,7 +2,7 @@
 
 Live Flask dashboard for Xerox, Brother and Epson printers. It polls each device over its embedded web interface, IPP and SNMP, then streams the merged status to the browser.
 
-Current version: **1.4.0** (shown next to the title; updates with each poll after an app upgrade).
+Current version: **1.5.0** (shown next to the title; updates with each poll after an app upgrade).
 
 ## Docker Compose
 
@@ -59,7 +59,7 @@ The dialog shows:
 - **Today** — pages since local midnight
 - **Last week** — trailing 7 days
 - **Last month** — trailing 30 days
-- **Average day**, **average month**, and **average year** — the print rate since the first stored reading, scaled to those periods
+- **Average day**, **average month**, and **average year** — the print rate since the first stored reading, scaled to those periods. **Count weekends** is on by default. Turning it off drops weekend pages and weekend time from those three numbers only; samples are still stored every 6 hours.
 
 Week and month charts are one bar per day for those same windows. The year chart is the last 12 calendar months. Last week and last month stay blank until a reading exists from the start of that window. Days and months before the first sample are hatched, not drawn as zero. A counter that drops (replacement or reset) does not subtract pages.
 
